@@ -4,77 +4,62 @@ from urllib.request import urlopen
 from urllib import parse
 
 #This is the Main entry point for the program
-#This obtains the URL and search word from the user as text input during run time
+#This obtains the URL from the user as text input during run time
 
 class LinkParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         # We are looking for the begining of a link. Links normally look
         # like <a href="www.someurl.com"></a>
-        if tag=='a':
+        if tag=='a' or tag=='link':
             for (key, value) in attrs:
                 if key=='href':
                     newUrl = parse.urljoin(self.baseUrl, value)
                     self.links = self.links + [newUrl]
-
-
     def getLinks(self, url):
-        print("inside getLinks")
         self.links = []
         self.baseUrl = url
         response = urlopen(url)
         headerDetails,decoder = response.getheader('Content-Type').split(';')
-        print(headerDetails,decoder)
-        print(headerDetails, "header details")
-        headerFormat = 'text/html'
-        print(headerDetails == headerFormat)
+        headerFormat = 'text/html' #setting header to read only html files
+        charterset,realDecoder = decoder.split('=')
+        #condition check if the reading page is Text based html file
         if headerFormat == headerDetails:
-            print("inside if condi")
             htmlBytes = response.read()
-            htmlString = htmlBytes.decode(decoder)
-            print(htmlString)
+            htmlString = htmlBytes.decode("utf-8") #Defaulted to Decoding with the utf-8 
             self.feed(htmlString)
+            self.handle_starttag('a',[('href',self.baseUrl)])
+            self.handle_starttag('link',[('href',self.baseUrl)])
             return htmlString, self.links
         else:
             return "",[]
 
 
-def crawlerweb(url,searchWord):
-    #print("starting program")
+def crawlerweb(url):
     pageToVisit = [url]
     visitCount = 0
-    wordFoundStatus = False
-    #print(not wordFoundStatus)
-    maxPage = 150 #This is set to read a set of pages and return data
-    #print(maxPage)
-    while visitCount < maxPage and pageToVisit != [] and not wordFoundStatus:
-        print("Entering while condition")
+    maxPage = 500 #This is set to read a set of pages and return data
+    #Condition to iterate over the given URL and find the HREF
+    while visitCount < maxPage and pageToVisit != []:
         visitCount = visitCount + 1
         url = pageToVisit[0]
         pageToVisit = pageToVisit[1:]
-        print("visiting page is ", url)
+        visitedPages = []
         try:
-            print(visitCount, "visiting URL", url)
             parser = LinkParser()
             data, links = parser.getLinks(url)
-            if data.find(word)>-1:
-                wordFoundStatus = True
-                pagesToVisit = pagesToVisit + links
+            visitedPages = visitedPages + links
         except:
-            print("Falied")
-    if(wordFoundStatus == True):
-        print("Found the Search word in URL", url)
-    else:
-        print("Word never found")
-		
+            print("Exception is handled")
+        print("site map is ")
+        while (len(visitedPages) - 1) != 0:
+            print(visitedPages[0])
+            visitedPages = visitedPages[1:]
 #Obtaining input from user
 userInput = str(sys.argv)
-#print(sys.argv)
-#print(len(sys.argv))
-#below condition checks if the URL and search string is passed
-if len(sys.argv) != 3:
-    print("Please input URL and search string. 2 Arguments only")
+#below condition checks if the URL is passed
+if len(sys.argv) != 2:
+    print("Please input URL and search string. 1 Arguments only")
 else:
-    url = sys.argv[1]
-    searchWord = sys.argv[2]
-    crawlerweb(url,searchWord)
+    url = sys.argv[1] #Assigns URL
+    crawlerweb(url) #Calls the function crawlerweb by passing the URL and Search word
